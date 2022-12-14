@@ -2,67 +2,91 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <time.h>
-#define MAX 4
+
+
+#define MAX 10 // Maximum size of the matrix
+
+// matA and matB are matrices with MAX rows and columns
 int matA[MAX][MAX]; 
 int matB[MAX][MAX]; 
 
+// matSumResult, matDiffResult and matProductResult are matrices with MAX rows and columns
+// that will be used to store the results of the matrix operations
 int matSumResult[MAX][MAX];
 int matDiffResult[MAX][MAX]; 
 int matProductResult[MAX][MAX]; 
 
+// Cordinate is a struct that represents a matrix cordinate (row and column)
 typedef struct{
   int row;
   int column;
 }Cordinate;
 
 
-
+// fillMatrix() fills the given matrix with random values between 1 and 10
 void fillMatrix(int matrix[MAX][MAX]) {
     for(int i = 0; i<MAX; i++) {
         for(int j = 0; j<MAX; j++) {
-            matrix[i][j] = rand()%10+1;
+            matrix[i][j] = rand()%10+1; // Generate a random value between 1 and 10 and assign it to the current element of the matrix
         }
     }
 }
 
+
+// Function to print a matrix
 void printMatrix(int matrix[MAX][MAX]) {
-    for(int i = 0; i<MAX; i++) {
-        for(int j = 0; j<MAX; j++) {
-            printf("%5d", matrix[i][j]);
-        }
-        printf("\n");
-    }
-    printf("\n");
+// Loop through each row and column of the matrix
+for(int i = 0; i<MAX; i++) {
+for(int j = 0; j<MAX; j++) {
+// Print each element of the matrix with 5 spaces before it
+printf("%5d", matrix[i][j]);
+}
+// After printing each row, add a newline
+printf("\n");
+}
+// Add another newline after printing the entire matrix
+printf("\n");
 }
 
-// Fetches the appropriate coordinates from the argument, and sets
-// the cell of matSumResult at the coordinates to the sum of the
-// values at the coordinates of matA and matB.
-void* computeSum(void* args) { 
-    Cordinate *entry = (Cordinate *)args;
-    int row = entry->row;
-    int column = entry->column;
-    matSumResult[row][column] = matA[row][column]+matB[row][column];
+// Function to compute the sum of two matrices
+void* computeSum(void* args) {
+// Cast the void pointer to a Cordinate pointer
+Cordinate *entry = (Cordinate *)args;
+
+// Get the row and column coordinates from the Cordinate struct
+int row = entry->row;
+int column = entry->column;
+
+// Compute the sum of the values at the given coordinates in matA and matB
+// and store the result in matSumResult
+matSumResult[row][column] = matA[row][column]+matB[row][column];
+
+// Function to compute the difference of two matrices
+void* computeDiff(void* args) {
+// Cast the void pointer to a Cordinate pointer
+Cordinate *entry = (Cordinate *)args;
+
+// Get the row and column coordinates from the Cordinate struct
+int row = entry->row;
+int column = entry->column;
+
+// Compute the difference of the values at the given coordinates in matA and matB
+// and store the result in matDiffResult
+matDiffResult[row][column] = matA[row][column]-matB[row][column];
 }
 
-// Fetches the appropriate coordinates from the argument, and sets
-// the cell of matSumResult at the coordinates to the difference of the
-// values at the coordinates of matA and matB.
-void* computeDiff(void* args) { // pass in the number of the ith thread
-    Cordinate *entry = (Cordinate *)args;
-    int row = entry->row;
-    int column = entry->column;
-    matDiffResult[row][column] = matA[row][column]-matB[row][column];
-}
+// Function to compute the inner product of two matrices
+void* computeProduct(void* args) {
+// Cast the void pointer to a Cordinate pointer
+Cordinate *entry = (Cordinate *)args;
+// Get the row and column coordinates from the Cordinate struct
+int row = entry->row;
+int column = entry->column;
 
-// Fetches the appropriate coordinates from the argument, and sets
-// the cell of matSumResult at the coordinates to the inner product
-// of matA and matB.
-void* computeProduct(void* args) { // pass in the number of the ith thread
-   Cordinate *entry = (Cordinate *)args;
-   int row = entry->row;
-   int column = entry->column;
-   matProductResult[row][column] = matA[row][column]*matB[row][column];
+// Compute the inner product of the values at the given coordinates in matA and matB
+// and store the result in matProductResult
+matProductResult[row][column] = matA[row][column]*matB[row][column];
+
 }
 
 // Spawn a thread to fill each cell in each result matrix.
@@ -99,18 +123,34 @@ int main(int argc, char *argv[]) {
     // its portion of the matrix. The thread will then have to free that space when it's done with what's in that memory.
     
   int i;
-   for (i = 0;i<threadCount;i++) {
-    Cordinate *entry = malloc(sizeof(Cordinate));
-    entry -> row = i / MAX;
-    entry -> column = i % MAX;
-    pthread_create(&threads[i],NULL, &computeSum,(void *)(entry));
-    pthread_create(&threads[i],NULL, &computeDiff,(void *)(entry));
-    pthread_create(&threads[i],NULL, &computeProduct, (void *)(entry));
 
-  }// 5. Wait for all threads to finish.
-   for (i = 0;i<threadCount;i++) {
-      pthread_join(threads[i], NULL);
-   }
+// Loop through each thread
+for (i = 0;i<threadCount;i++) {
+// Allocate memory for the Cordinate struct
+Cordinate *entry = malloc(sizeof(Cordinate));
+
+// Set the row and column coordinates in the Cordinate struct
+entry -> row = i / MAX;
+entry -> column = i % MAX;
+
+// Create a thread to compute the sum of the matrices using the Cordinate struct
+// as the argument
+pthread_create(&threads[i],NULL, &computeSum,(void *)(entry));
+
+// Create a thread to compute the difference of the matrices using the Cordinate struct
+// as the argument
+pthread_create(&threads[i],NULL, &computeDiff,(void *)(entry));
+
+// Create a thread to compute the inner product of the matrices using the Cordinate struct
+// as the argument
+pthread_create(&threads[i],NULL, &computeProduct, (void *)(entry));
+
+}
+
+// Wait for all threads to finish
+for (i = 0;i<threadCount;i++) {
+pthread_join(threads[i], NULL);
+}
     
     // 6. Print the results.
     printf("Results:\n");
